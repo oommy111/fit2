@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anime Fitness Pro - Real Active v2</title>
+    <style>
+        :root {
+            --bg-color: #0d0e12;
+            --card-bg: #1a1c23;
+            --accent-color: #ff4a4a;
+            --text-color: #ffffff;
+            --text-muted: #8b8f9a;
+            --success-color: #00ffcc;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #000;
+            color: var(--text-color);
+            margin: 0; padding: 0;
+            display: flex; justify-content: center;
+            min-height: 100vh;
+        }
+        .phone-container {
+            width: 100%; max-width: 412px;
+            background-color: var(--bg-color);
+            min-height: 100vh;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+            position: relative;
+            display: flex; flex-direction: column;
+            overflow-y: auto;
+        }
+        .page { display: none; padding: 20px; flex-direction: column; flex: 1; padding-bottom: 80px; }
+        .page.active { display: flex; }
+        
+        h2 { color: var(--text-color); font-size: 24px; margin-bottom: 5px; margin-top: 10px;}
+        h4 { margin-top: 20px; margin-bottom: 10px; font-size: 18px;}
+        .subtitle { color: var(--text-muted); font-size: 14px; margin-bottom: 20px; margin-top: 0;}
+        
+        /* Form Controls */
+        .form-group { margin-bottom: 18px; }
+        label { display: block; margin-bottom: 8px; font-size: 14px; font-weight: 600; color: #d1d5db; }
+        input, select {
+            width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #2d313f;
+            background-color: var(--card-bg); color: white; box-sizing: border-box; font-size: 15px;
+        }
+        input:focus, select:focus { border-color: var(--accent-color); outline: none;}
+        
+        .chip-group { display: flex; gap: 10px; flex-wrap: wrap; }
+        .chip-box {
+            flex: 1; min-width: 90px; text-align: center; padding: 12px 8px; 
+            background-color: var(--card-bg); border: 1px solid #2d313f; border-radius: 8px; cursor: pointer;
+            font-size: 13px; transition: all 0.2s;
+        }
+        .chip-box.selected { border-color: var(--accent-color); background-color: rgba(255,74,74,0.15); font-weight: bold;}
+
+        .btn-primary {
+            background-color: var(--accent-color); color: white; border: none; padding: 15px;
+            border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px;
+            width: 100%; transition: background 0.2s;
+        }
+        .btn-primary:hover { background-color: #e03e3e; }
+        .btn-secondary {
+            background-color: #2d313f; color: white; border: none; padding: 10px;
+            border-radius: 6px; font-size: 14px; cursor: pointer; width: 100%; margin-top: 5px;
+        }
+
+        /* App Components */
+        .cal-box { background: linear-gradient(135deg, #1a1c23 0%, #252836 100%); padding: 18px; border-radius: 12px; text-align: center; margin-bottom: 20px; border: 1px solid #2d313f;}
+        .cal-grid { display: flex; justify-content: space-around; margin-top: 10px; font-size: 12px; color: var(--text-muted);}
+        .cal-num { font-size: 36px; font-weight: bold; color: var(--accent-color); margin: 5px 0; }
+        
+        .model-picker-card {
+            background: linear-gradient(135deg, #1e1b4b 0%, #311042 100%);
+            padding: 15px; border-radius: 12px; margin-bottom: 25px; border: 1px solid #4c1d95; text-align: center;
+        }
+        
+        .exercise-card {
+            background-color: var(--card-bg); border-radius: 12px; padding: 15px; margin-bottom: 12px;
+            border-left: 4px solid var(--accent-color); border-top: 1px solid #2d313f; border-right: 1px solid #2d313f; border-bottom: 1px solid #2d313f;
+        }
+        .exercise-anatomy { font-size: 12px; color: var(--success-color); font-weight: bold; margin-top: 4px; }
+        .exercise-meta { display: flex; justify-content: space-between; color: var(--text-muted); font-size: 13px; margin-top: 8px; }
+        
+        /* Navigation */
+        .nav-bar {
+            position: absolute; bottom: 0; left: 0; right: 0; background-color: var(--card-bg);
+            display: flex; justify-content: space-around; padding: 12px 0; border-top: 1px solid #2d313f; z-index: 100;
+        }
+        .nav-item { color: var(--text-muted); cursor: pointer; font-size: 12px; text-align: center; flex: 1; }
+        .nav-item.active { color: var(--accent-color); font-weight: bold; }
+
+        /* AI Camera Input */
+        .camera-btn-wrapper {
+            background: #1f1a2e; border: 2px dashed #6b47ff; padding: 25px; border-radius: 12px; text-align: center; margin-bottom: 20px; position: relative;
+        }
+        .camera-btn-wrapper input[type="file"] {
+            position: absolute; left: 0; top: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div class="phone-container">
+
+    <!-- 1. หน้าสมัครเข้าใช้งาน (ONBOARDING) -->
+    <div id="page-onboarding" class="page">
+        <h2>สร้างบัญชีสายฟิต</h2>
+        <p class="subtitle">กรอกข้อมูลร่างกายเพื่อคำนวณแผนตามหลักวิทยาศาสตร์</p>
+        
+        <div class="form-group">
+            <label>อีเมลสำหรับจดจำข้อมูลผู้ใช้</label>
+            <input type="email" id="reg-email" placeholder="example@mail.com" required>
+        </div>
+
+        <div class="form-group">
+            <label>ชื่อหรือนามแฝง</label>
+            <input type="text" id="reg-name" placeholder="ระบุชื่อของคุณ">
+        </div>
+
+        <div class="form-group">
+            <label>อายุของคุณ (ปี)</label>
+            <input type="number" id="reg-age" placeholder="ตัวอย่าง: 24">
+        </div>
+
+        <div class="form-group">
+            <label>น้ำหนักปัจจุบัน (กิโลกรัม)</label>
+            <input type="number" id="reg-weight" placeholder="ตัวอย่าง: 72">
+        </div>
+
+        <div class="form-group">
+            <label>ส่วนสูงปัจจุบัน (เซนติเมตร)</label>
+            <input type="number" id="reg-height" placeholder="ตัวอย่าง: 175">
+        </div>
+
+        <div class="form-group">
+            <label>เป้าหมายการปรับรูปร่าง</label>
+            <select id="reg-goal" onchange="toggleTargetWeightLabel()">
+                <option value="lose">📉 ลดน้ำหนัก (คุมแคลอรีติดลบ)</option>
+                <option value="maintain">⚖️ คงน้ำหนัก (เน้นสร้างความกระชับ)</option>
+                <option value="gain">📈 เพิ่มน้ำหนัก/สร้างกล้ามเนื้อ (เพิ่มพลังงานคอร์สหนา)</option>
+            </select>
+        </div>
+
+        <div class="form-group" id="target-weight-wrapper">
+            <label id="target-weight-label">น้ำหนักเป้าหมายที่ต้องการ (กิโลกรัม)</label>
+            <input type="number" id="reg-target-weight" placeholder="ตัวอย่าง: 65">
+        </div>
+
+        <div class="form-group">
+            <label>จำนวนวันที่สะดวกออกกำลังกายต่อสัปดาห์</label>
+            <div class="chip-group">
+                <div class="chip-box selected" onclick="selectOnboardChip('days', this, '3')">3 วัน / สัปดาห์</div>
+                <div class="chip-box" onclick="selectOnboardChip('days', this, '6')">6 วัน / สัปดาห์</div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>อุปกรณ์ที่คุณมีที่บ้าน (เลือกซ้ำได้)</label>
+            <div class="chip-group">
+                <div class="chip-box selected" style="cursor:default;">Bodyweight (มีเสมอ)</div>
+                <div class="chip-box" id="chip-db" onclick="toggleOnboardEquipment('dumbbell')">มีดัมเบล</div>
+                <div class="chip-box" id="chip-bar" onclick="toggleOnboardEquipment('pullup_bar')">มีบาร์โหน</div>
+            </div>
+        </div>
+
+        <button class="btn-primary" onclick="submitOnboarding()">🚀 ยืนยันข้อมูลและเข้าสู่แอป</button>
+    </div>
+
+
+    <!-- 2. หน้าตารางออกกำลังกายหลัก (WORKOUT DASHBOARD) -->
+    <div id="page-workout" class="page">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <div>
+                <span id="user-email-display" style="color:var(--text-muted); font-size:11px;">user@mail.com</span>
+                <h3 style="margin:0; font-size:20px;">สวัสดีคุณ <span id="user-name-display">ผู้ใช้</span></h3>
+            </div>
+            <span id="current-model-tag" style="font-size:12px; background:#2d313f; padding:4px 10px; border-radius:20px; color:var(--success-color)">ยังไม่เลือกโมเดล</span>
+        </div>
+
+        <!-- กล่องแคลอรีคำนวณจริงจากน้ำหนักและเป้าหมาย -->
+        <div class="cal-box">
+            <div style="font-size:12px; color:var(--text-muted);" id="cal-title-goal">โควตาพลังงานของคุณ</div>
+            <div class="cal-num" id="dash-cal">0 kcal</div>
+            <div class="cal-grid">
+                <div>ปัจจุบัน: <span id="w-now">0</span> kg</div>
+                <div>➡️</div>
+                <div>เป้าหมาย: <span id="w-target">0</span> kg</div>
+            </div>
+        </div>
+
+        <!-- การเลือกโมเดลปั้นหุ่น (ย้ายมาเลือกข้างหลังตามคำขอ) -->
+        <div id="model-picker-area" class="model-picker-card">
+            <h4 style="margin-top:0; color:#c084fc;">ปั้นหุ่นตามโมเดลอนิเมะของคุณ</h4>
+            <p style="font-size:12px; color:#e9d5ff; margin-bottom:12px;">ระบบจะคำนวณท่าออกกำลังกายตามหลักกายวิภาคตามหุ่นเป้าหมาย</p>
+            <select id="select-anime-model" style="margin-bottom:10px; background:#2e104e; border-color:#6b21a8;" onchange="updateAnimeModel(this.value)">
+                <option value="">-- กรุณาเลือกโมเดลต้นแบบ --</option>
+                <option value="toji">Toji Fushiguro (เน้นสัดส่วนรูปตัว V อกแน่นปีกกว้าง)</option>
+                <option value="jinwoo">Sung Jin-Woo (เน้นความลีน สลายไขมันสไตล์ Calisthenics)</option>
+                <option value="goku">Goku (เน้นความหนาแน่น ทนทาน พละกำลังช่วงล่างและแกนกลาง)</option>
+            </select>
+        </div>
+
+        <h4>📅 ตารางฝึกซ้อมประจำวันของคุณ</h4>
+        <div id="active-workout-list">
+            <p style="color:var(--text-muted); text-align:center; font-size:14px; margin-top:20px;">กรุณาเลือกโมเดลต้นแบบอนิเมะด้านบน เพื่อจ่ายตารางฝึกซ้อม</p>
+        </div>
+    </div>
+
+
+    <!-- 3. หน้านับแคลอรีด้วย AI (REAL API SCANNER) -->
+    <div id="page-calorie" class="page">
+        <h2>AI ตรวจสอบแคลอรีอาหาร</h2>
+        <p class="subtitle">ถ่ายรูปหรืออัปโหลดรูปภาพอาหารเพื่อให้ AI ประเมินผลสดๆ</p>
+
+        <div class="camera-btn-wrapper">
+            <div style="font-size: 36px;">📸</div>
+            <div style="font-weight:bold; margin-top:5px; font-size:14px;">กดถ่ายรูป หรือ เลือกรูปอาหาร</div>
+            <input type="file" id="image-file-input" accept="image/*" onchange="handleImageAnalysis(this)">
+        </div>
+
+        <div id="api-loading-status" style="display:none; text-align:center; color:yellow; font-size:14px; margin-bottom:15px;">
+            ⏳ กำลังส่งข้อมูลภาพไปให้ระบบ AI ประมวลผล...
+        </div>
+
+        <div id="real-ai-result-box" style="display:none; background:var(--card-bg); padding:15px; border-radius:12px; border:1px solid #2d313f; border-left:4px solid #6b47ff;">
+            <b style="color:var(--success-color); display:block; margin-bottom:8px;">🤖 ผลวิเคราะห์จาก Gemini AI:</b>
+            <div id="real-ai-text" style="font-size:14px; line-height:1.5; white-space: pre-wrap;"></div>
+        </div>
+    </div>
+
+
+    <!-- 4. หน้าตั้งค่าและใส่ API KEY (SETTINGS) -->
+    <div id="page-settings" class="page">
+        <h2>ตั้งค่าระบบหลังบ้าน</h2>
+        <p class="subtitle">จัดการ API เชื่อมต่อ และปรับแต่งข้อมูลของคุณ</p>
+
+        <div class="form-group" style="background:#1e1b29; padding:15px; border-radius:10px; border:1px solid #4c1d95;">
+            <label style="color:#a78bfa;">🔑 Google Gemini API Key</label>
+            <p style="font-size:11px; color:#c084fc; margin-top:0;">จำเป็นต้องใส่เพื่อเปิดระบบถ่ายรูปคำนวณแคลอรีจริง (สมัครรับคีย์ได้ฟรีที่ Google AI Studio)</p>
+            <input type="password" id="input-api-key" placeholder="AIzaSy..." onchange="saveAPIKey(this.value)">
+            <button class="btn-secondary" onclick="alert('ระบบบันทึกคีย์ของคุณลงในเครื่องนี้ปลอดภัยเรียบร้อย!')" style="background:#5b21b6;">บันทึกคีย์</button>
+        </div>
+
+        <h4>⚙️ ข้อมูลบัญชีของคุณ</h4>
+        <div style="background:var(--card-bg); padding:12px; border-radius:8px; font-size:13px; color:var(--text-muted);">
+            <p style="margin:5px 0;">📧 อีเมลบันทึกสิทธิ์: <span id="set-email" style="color:white"></span></p>
+            <p style="margin:5px 0;">🗓️ ความถี่ซ้อม: <span id="set-days" style="color:white"></span> วัน/สัปดาห์</p>
+        </div>
+
+        <button class="btn-primary" onclick="clearAllData()" style="background:#374151; margin-top:30px;">⚠️ ออกจากระบบและล้างข้อมูลทั้งหมด</button>
+    </div>
+
+
+    <!-- แถบเมนูด้านล่าง (BOTTOM APP NAVIGATION) -->
+    <div class="nav-bar" id="main-nav-bar">
+        <div class="nav-item active" id="btn-nav-workout" onclick="navigateTo('workout')">🏋️‍♂️ ตารางฟิต</div>
+        <div class="nav-item" id="btn-nav-calorie" onclick="navigateTo('calorie')">📸 AI นับแคล</div>
+        <div class="nav-item" id="btn-nav-settings" onclick="navigateTo('settings')">⚙️ ตั้งค่า API</div>
+    </div>
+
+</div>
+
+<script>
+    // คลังข้อมูลท่าออกกำลังกายอิงตามหลัก Anatomy กายวิภาคจริง
+    const anatomyExerciseDatabase = [
+        { name: "Dumbbell Bench Press", muscles: "อกส่วนกลาง และ อกส่วนบน (Pectoralis Major)", eq: "dumbbell", avatars: ["toji", "goku"], sets: "4 เซ็ต x 10 ครั้ง" },
+        { name: "Standard Push-up (วิดพื้นกว้างพอดีไหล่)", muscles: "กล้ามเนื้ออก และ หัวไหล่หน้า (Anterior Deltoid)", eq: "bodyweight", avatars: ["toji", "jinwoo", "goku"], sets: "3 เซ็ต x 15 ครั้ง" },
+        { name: "Dumbbell Row (ดึงดัมเบลทีละข้างเข้าหาลำตัว)", muscles: "กล้ามเนื้อปีกหนา (Latissimus Dorsi) และหลังส่วนบน", eq: "dumbbell", avatars: ["toji"], sets: "4 เซ็ต x 12 ครั้ง" },
+        { name: "Wide-Grip Pull-up (ดึงข้อปีกกว้างบนบาร์โหน)", muscles: "กล้ามเนื้อปีกกว้างสร้างสัดส่วนหุ่น V-Shape ลำตัวส่วนบน", eq: "pullup_bar", avatars: ["toji", "jinwoo"], sets: "4 เซ็ต x จำนวนครั้งมากสุดที่ไหว" },
+        { name: "Inverted Row (เกาะขอบโต๊ะดึงตัวระนาบขนานพื้น)", muscles: "กล้ามเนื้อหลังส่วนกลาง สะบัก (Rhomboids) และหน้าแขน", eq: "bodyweight", avatars: ["toji", "jinwoo"], sets: "3 เซ็ต x 10 ครั้ง" },
+        { name: "Dumbbell Goblet Squat", muscles: "กล้ามเนื้อหน้าขา (Quadriceps) และสะโพกตึงแน่น", eq: "dumbbell", avatars: ["toji", "goku"], sets: "4 เซ็ต x 12 ครั้ง" },
+        { name: "Bodyweight Air Squat", muscles: "ต้นขาด้านหน้า แขนขา และสร้างความทนทานของข้อต่อส่วนล่าง", eq: "bodyweight", avatars: ["jinwoo", "goku"], sets: "4 เซ็ต x 20 ครั้ง" },
+        { name: "Jump Squat (ย่อตัวแล้วกระโดดระเบิดพลัง)", muscles: "กล้ามเนื้อขาประเภท Fast-twitch เพิ่มความเร็วและการสลายไขมัน", eq: "bodyweight", avatars: ["goku"], sets: "4 เซ็ต x 15 ครั้ง" }
+    ];
+
+    // ตัวแปรเก็บสถานะการสมัครชั่วคราวขณะอยู่ในหน้ารวมแรก
+    let onboardingData = {
+        days: '3',
+        equipment: ['bodyweight']
+    };
+
+    // ทำหน้าที่เช็คว่าเปิดมาผู้ใช้คนนี้เคยสมัครไว้หรือยังเมื่อเปิดแอปครั้งแรก
+    window.onload = function() {
+        checkUserSession();
+    };
+
+    function checkUserSession() {
+        const savedEmail = localStorage.getItem('fit_user_email');
+        if (savedEmail) {
+            // ดึงข้อมูลขึ้นมาแสดงหน้าหลักทันทีไม่ต้องสมัครใหม่
+            document.getElementById('page-onboarding').classList.remove('active');
+            document.getElementById('page-workout').classList.add('active');
+            document.getElementById('main-nav-bar').style.display = 'flex';
+            
+            // แสดงข้อมูลในหน้าแสดงผลต่างๆ
+            document.getElementById('user-email-display').innerText = savedEmail;
+            document.getElementById('user-name-display').innerText = localStorage.getItem('fit_user_name') || 'ผู้ใช้';
+            document.getElementById('set-email').innerText = savedEmail;
+            document.getElementById('set-days').innerText = localStorage.getItem('fit_workout_days');
+            
+            // ใส่ API คีย์เดิมลงในหน้าตั้งค่าถ้ามีคีย์อยู่แล้ว
+            if(localStorage.getItem('fit_gemini_api_key')) {
+                document.getElementById('input-api-key').value = localStorage.getItem('fit_gemini_api_key');
+            }
+            
+            calculateUserCalories();
+            renderActiveWorkoutPlan();
+        } else {
+            // บังคับแสดงหน้าสมัครใช้งานครั้งแรก
+            document.getElementById('page-onboarding').classList.add('active');
+            document.getElementById('main-nav-bar').style.display = 'none';
+        }
+    }
+
+    function toggleTargetWeightLabel() {
+        const goal = document.getElementById('reg-goal').value;
+        const label = document.getElementById('target-weight-label');
+        if (goal === 'lose') {
+            label.innerText = "น้ำหนักเป้าหมายสำหรับลดน้ำหนัก (กิโลกรัม)";
+        } else if (goal === 'gain') {
+            label.innerText = "น้ำหนักเป้าหมายสำหรับเพิ่มน้ำหนัก (กิโลกรัม)";
+        } else {
+            label.innerText = "น้ำหนักที่ตั้งเป้าควบคุมประคองตัว (กิโลกรัม)";
+        }
+    }
+
+    function selectOnboardChip(type, element, value) {
+        let siblings = element.parentNode.children;
+        for(let s of siblings) s.classList.remove('selected');
+        element.classList.add('selected');
+        if(type === 'days') onboardingData.days = value;
+    }
+
+    function toggleOnboardEquipment(value) {
+        const chip = document.getElementById(value === 'dumbbell' ? 'chip-db' : 'chip-bar');
+        chip.classList.toggle('selected');
+        if(chip.classList.contains('selected')) {
+            onboardingData.equipment.push(value);
+        } else {
+            onboardingData.equipment = onboardingData.equipment.filter(e => e !== value);
+        }
+    }
+
+    function submitOnboarding() {
+        const email = document.getElementById('reg-email').value.trim();
+        const name = document.getElementById('reg-name').value.trim();
+        const age = document.getElementById('reg-age').value.trim();
+        const weight = document.getElementById('reg-weight').value.trim();
+        const height = document.getElementById('reg-height').value.trim();
+        const targetWeight = document.getElementById('reg-target-weight').value.trim();
+        const goal = document.getElementById('reg-goal').value;
+
+        if(!email || !name || !age || !weight || !height || !targetWeight) {
+            alert('กรุณากรอกข้อมูลในช่องรับสัญญาณให้ครบถ้วนทุกช่อง (มีป้ายกำกับบอกชัดเจนแล้ว)');
+            return;
+        }
+
+        // เซฟเก็บเข้า LocalStorage ของเครื่องทันทีเลียนแบบฐานข้อมูลหลังบ้าน
+        localStorage.setItem('fit_user_email', email);
+        localStorage.setItem('fit_user_name', name);
+        localStorage.setItem('fit_user_age', age);
+        localStorage.setItem('fit_user_weight', weight);
+        localStorage.setItem('fit_user_height', height);
+        localStorage.setItem('fit_user_target_weight', targetWeight);
+        localStorage.setItem('fit_user_goal', goal);
+        localStorage.setItem('fit_workout_days', onboardingData.days);
+        localStorage.setItem('fit_equipment', JSON.stringify(onboardingData.equipment));
+        localStorage.setItem('fit_selected_model', ''); // ยังไม่ระบุ รอไปเลือกข้างหลัง
+
+        checkUserSession();
+    }
+
+    function calculateUserCalories() {
+        const weight = parseFloat(localStorage.getItem('fit_user_weight'));
+        const height = parseFloat(localStorage.getItem('fit_user_height'));
+        const age = parseFloat(localStorage.getItem('fit_user_age'));
+        const goal = localStorage.getItem('fit_user_goal');
+        const targetW = localStorage.getItem('fit_user_target_weight');
+
+        // คำนวณสูตรสากลทางการกีฬา Mifflin-St Jeor
+        let bmr = (10 * weight) + (6.25 * height) - (5 * age) + 5;
+        let tdee = Math.round(bmr * 1.375); // อัตราเฉลี่ยออกกำลังกายเบื้องต้น
+
+        let summaryText = "โควตาคงน้ำหนักปัจจุบัน";
+        if (goal === 'lose') {
+            tdee -= 500;
+            summaryText = "โควตาสำหรับลดน้ำหนักเป้าหมาย";
+        } else if (goal === 'gain') {
+            tdee += 500;
+            summaryText = "โควตาสำหรับเพิ่มมวลน้ำหนัก";
+        }
+
+        document.getElementById('cal-title-goal').innerText = summaryText;
+        document.getElementById('dash-cal').innerText = tdee + " kcal / วัน";
+        document.getElementById('w-now').innerText = weight;
+        document.getElementById('w-target').innerText = targetW;
+    }
+
+    function updateAnimeModel(modelValue) {
+        localStorage.setItem('fit_selected_model', modelValue);
+        renderActiveWorkoutPlan();
+    }
+
+    function renderActiveWorkoutPlan() {
+        const currentModel = localStorage.getItem('fit_selected_model');
+        const listContainer = document.getElementById('active-workout-list');
+        const tag = document.getElementById('current-model-tag');
+        
+        if(!currentModel) {
+            tag.innerText = "ยังไม่เลือกโมเดล";
+            tag.style.color = "var(--text-muted)";
+            document.getElementById('select-anime-model').value = "";
+            listContainer.innerHTML = '<p style="color:var(--text-muted); text-align:center; font-size:14px; margin-top:20px;">กรุณาเลือกโมเดลต้นแบบอนิเมะด้านบน เพื่อจ่ายตารางฝึกซ้อม</p>';
+            return;
+        }
+
+        document.getElementById('select-anime-model').value = currentModel;
+        tag.innerText = "โมเดล: " + currentModel.toUpperCase();
+        tag.style.color = "var(--success-color)";
+
+        // ดึงอุปกรณ์ของคนๆ นี้มาใช้ฟิลเตอร์กรองท่าออกกำลังกายจริง
+        const myEquipment = JSON.parse(localStorage.getItem('fit_equipment') || '["bodyweight"]');
+        
+        // กรองหาท่าที่ตรงตามคุณสมบัติโมเดลแอนิเมะนั้น และต้องแมตช์เข้ากับอุปกรณ์ที่คนนี้มีติดบ้านจริงๆ
+        let resultPlans = anatomyExerciseDatabase.filter(ex => {
+            let modelMatch = ex.avatars.includes(currentModel);
+            let equipmentMatch = myEquipment.includes(ex.eq);
+            return modelMatch && equipmentMatch;
+        });
+
+        if(resultPlans.length === 0) {
+            // Fallback คืนค่าเป็นท่าบอดี้เวทธรรมดาให้กรณีอุปกรณ์ไม่เจอ
+            resultPlans = anatomyExerciseDatabase.filter(ex => ex.avatars.includes(currentModel) && ex.eq === 'bodyweight');
+        }
+
+        listContainer.innerHTML = "";
+        resultPlans.forEach(ex => {
+            listContainer.innerHTML += `
+                <div class="exercise-card">
+                    <div style="font-weight:bold; font-size:15px; color:white;">${ex.name}</div>
+                    <div class="exercise-anatomy">🎯 พิกัดกายวิภาค: ${ex.muscles}</div>
+                    <div class="exercise-meta">
+                        <span>⚙️ เงื่อนไขอุปกรณ์: ${ex.eq.toUpperCase()}</span>
+                        <span style="color:var(--accent-color); font-weight:bold;">📊 ${ex.sets}</span>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    function saveAPIKey(key) {
+        localStorage.setItem('fit_gemini_api_key', key.trim());
+    }
+
+    // 🌟 ระบบสแกนและประมวลผลผ่านตัว API จริงของ Google Gemini
+    function handleImageAnalysis(inputElement) {
+        const file = inputElement.files[0];
+        if(!file) return;
+
+        const apiKey = localStorage.getItem('fit_gemini_api_key');
+        if(!apiKey) {
+            alert('⚠️ ตรวจไม่พบ API Key! กรุณาไปใส่รหัสคีย์ของคุณในแถบหน้า "ตั้งค่า API" ก่อนระเบิดพลังนับแคลอรีจริงด้วยภาพถ่าย');
+            inputElement.value = "";
+            return;
+        }
+
+        document.getElementById('api-loading-status').style.display = 'block';
+        document.getElementById('real-ai-result-box').style.display = 'none';
+
+        // แปลงรูปภาพที่เลือกให้กลายเป็นรูปแบบ Base64 เพื่อยิงส่งเข้า API ของ Google Direct
+        const reader = new FileReader();
+        reader.onloadend = function() {
+            const base64Data = reader.result.split(',')[1];
+            callRealGeminiAPI(apiKey, base64Data);
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function callRealGeminiAPI(apiKey, base64Image) {
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+        
+        const payload = {
+            contents: [{
+                parts: [
+                    { text: "คุณคือเทรนเนอร์ AI อัจฉริยะประเมินโภชนาการอาหาร จงวิเคราะห์รูปภาพอาหารจานนี้ บอกชื่อเมนู และระบุปริมาณพลังงานแคลอรีรวมโดยประมาณ รวมถึงจำแนกสัดส่วนสารอาหารหลัก โปรตีน คาร์โบไฮเดรต ไขมัน สรุปเป็นข้อความสั้นๆ กระชับ ได้ใจความชัดเจนเป็นภาษาไทย" },
+                    {
+                        inlineData: {
+                            mimeType: "image/jpeg",
+                            data: base64Image
+                        }
+                    }
+                ]
+            }]
+        };
+
+        fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('api-loading-status').style.display = 'none';
+            document.getElementById('real-ai-result-box').style.display = 'block';
+            
+            try {
+                const aiTextResponse = data.candidates[0].content.parts[0].text;
+                document.getElementById('real-ai-text').innerText = aiTextResponse;
+            } catch(e) {
+                document.getElementById('real-ai-text').innerText = "⚠️ การประมวลผลล้มเหลว กรุณาตรวจสอบความถูกต้องของ API Key ในหน้าตั้งค่าของคุณใหม่อีกครั้ง";
+                console.error(data);
+            }
+        })
+        .catch(err => {
+            document.getElementById('api-loading-status').style.display = 'none';
+            document.getElementById('real-ai-result-box').style.display = 'block';
+            document.getElementById('real-ai-text').innerText = "❌ เกิดข้อผิดพลาดทางเทคนิคในการเชื่อมต่อระบบอินเทอร์เน็ตเซิร์ฟเวอร์";
+            console.error(err);
+        });
+    }
+
+    function navigateTo(pageId) {
+        document.getElementById('page-workout').classList.remove('active');
+        document.getElementById('page-calorie').classList.remove('active');
+        document.getElementById('page-settings').classList.remove('active');
+        
+        document.getElementById('btn-nav-workout').classList.remove('active');
+        document.getElementById('btn-nav-calorie').classList.remove('active');
+        document.getElementById('btn-nav-settings').classList.remove('active');
+
+        document.getElementById('page-' + pageId).classList.add('active');
+        document.getElementById('btn-nav-' + pageId).classList.add('active');
+    }
+
+    function clearAllData() {
+        if(confirm('คุณต้องการลบข้อมูลสถิติร่างกาย บัญชีอีเมล และคีย์ API ทั้งหมดออกจากแอปเครื่องนี้ใช่หรือไม่?')) {
+            localStorage.clear();
+            location.reload();
+        }
+    }
+</script>
+
+</body>
+</html>
